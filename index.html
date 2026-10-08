@@ -80,8 +80,12 @@ main.grid{display:grid;grid-template-columns:minmax(0,384px) minmax(0,1fr);gap:2
 .act{border-left:3px solid var(--cat)}
 .tag.on{color:var(--crystal);border-color:color-mix(in srgb,var(--crystal) 50%,var(--line))}
 .wish{display:flex;flex-direction:column;gap:6px}
-.wish label{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:13.5px;line-height:1.4;cursor:pointer}
+.wish label{display:grid;grid-template-columns:auto 44px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:13.5px;line-height:1.4;cursor:pointer}
 .wish label:has(input:checked){border-color:var(--c-goods);background:color-mix(in srgb,var(--c-goods) 12%,var(--surface-2))}
+.wish .wt{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--bg)}
+.wish .wt.none{display:block}
+.act .thumb{display:block;width:100%;aspect-ratio:16/9;max-width:100%;object-fit:cover;border-radius:7px;background:var(--bg)}
+.copy{font-family:var(--f-mono);letter-spacing:.04em}
 .wish input{accent-color:var(--c-goods);width:16px;height:16px;margin:0}
 .wish .k{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
 .note{font-size:12.5px;color:var(--muted);line-height:1.6}
@@ -244,7 +248,7 @@ footer.src a{color:var(--crystal)}
 
       <footer class="src" id="secSrc">
         ステージ時刻は 2026年10月5日発表の公式情報に基づきます。内容・時間は変更になる場合があります。ピアノコンサートとTHE PRIMALSのライブ配信は有料です。<br>
-        公式：<a href="https://fanfest.finalfantasyxiv.com/2026/jp/" target="_blank" rel="noopener">ファンフェスティバル 2026 特設サイト</a> ／ 本ツールは非公式のファンメイドです。予定はこのブラウザにだけ保存されます。
+        公式：<a href="https://fanfest.finalfantasyxiv.com/2026/jp/" target="_blank" rel="noopener">ファンフェスティバル 2026 特設サイト</a> ／ 本ツールは非公式のファンメイドで、スクウェア・エニックスとは関係ありません。予定はこのブラウザにだけ保存されます。カードの画像は公式サイトのものを表示しています。<br><span class="copy">© SQUARE ENIX</span>
       </footer>
     </div>
   </main>
@@ -285,6 +289,26 @@ const STAGES = [
   { id: "s9", day: 2, start: "15:30", end: "17:30", title: "直樹の部屋", cat: "stage", cast: "吉田直樹、室内俊夫／ゲスト：濱田龍臣、k4sen、SHAKA、赤見かるび、Clutch_Fi、猫麦とろろ、おぼ、うるか、トナカイト、Sasatikk" },
   { id: "s10", day: 2, start: "19:30", end: "20:30", title: "スペシャルライブ THE PRIMALS", cat: "music", cast: "THE PRIMALS（ゲスト：AKINO、伊藤友馬）", paid: true, note: "全国イオンシネマでライブビューイング" },
 ];
+const IMG_BASE = "https://fanfest.finalfantasyxiv.com/2026/jp/_next/static/chunks/images/_next/static/media/";
+const IMG = {
+  a1: "chocobo_race_vr.98753d28", a3: "yokero.deaad8c8", a4: "dancing_green.436298f0", a5: "real_mystery.5475fcfa", a8: "mahjong.ca6ffe81",
+  a9: "eorzea_quiz.1c688db6", a10: "nice_head.b1af9aca", a11: "allagan.edf1b365", a13: "npc_directory.cb75cbb5", a15: "fat_chocobo.4b90115e",
+  a16: "photospot.425b0048", a17: "message_board.eb4b533e", a18: "atelier_board.44e0d3da",
+  g1: "store.9ade2d67", g2: "popup_store.581594d5", g3: "moogle_catcher.ffb81971", g4: "treasure_hunt.de66ffa3", g5: "fanfest_lottery.3c95fd2a",
+  g6: "workshop.2bf9e74e", g7: "fragrance.afd985fc", f1: "eorzea_cafe.a30f58ec", f3: "food_truck.378ea76d",
+  w1: "ffxiv-orgel-living-memory-thumbnail-1.efea571c", w2: "ffxiv-moogle-pen-light-thumbnail-1.c99bc92f", w3: "ffxiv-calyx-plush-thumbnail-1.ebbce649",
+  w4: "ffxiv-living-memory-stole-thumbnail-1.d7243128", w5: "ffxiv-plush-alpaca-thumbnail-1.1f26157a", w6: "ffxiv-silver-earrings-emet-selch-thumbnail-1.c4c5ca7e",
+  w7: "ffxiv-miniature-figure-collection-vol3-thumbnail-1.78cffc97", w8: "ffxiv-mini-puppet-plush-collection-vol3-thumbnail-1.0487061a",
+  w9: "ffxiv-rubber-magnet-collection-vol3-thumbnail-1.92c479b0", w10: "ffxiv-neon-light-moogle-thumbnail-1.1af4599e",
+  w11: "ffxiv-fake-leather-charm-moogle-thumbnail-1.864a8371", w12: "ffxiv-energy-drink-gummy-gg-thumbnail-1.f0566960",
+  w13: "ffxiv-fat-chocobo-curry-thumbnail-1.d9dc35ea", w14: "ffxiv-fanfest2026-muffler-towel-thumbnail-1.00fab34e", w15: "ffxiv-karuta-vol1-thumbnail-1.dd943621",
+  w16: "ffxiv-glass-plate-collection-vol1-thumbnail-1.138a1632", w17: "ffxiv-eau-de-toilette-thumbnail-1.21b7968e", w18: "ffxiv-usowoso-backpack-thumbnail-1.3771d8a5",
+  w19: "ffxiv-clear-keychain-fandaniel-crystal-thumbnail-1.b8717c86", w20: "ffxiv-clear-keychain-elidibus-crystal-thumbnail-1.275bb4b9",
+  w21: "ffxiv-neon-parasol-thumbnail-1.c0a779d9", w22: "ffxiv-sticky-notes-field-marker-thumbnail-1.a0892cf5", w23: "ffxiv-bomber-jacket-thumbnail-1.ab9a7dfd",
+  w27: "ffxiv-t-shirt-souvenir-of-strayborough-thumbnail-1.bf108bd5", w28: "music-piano-arrange-thumbnail-1.24e99dab", w29: "music-pulse3-thumbnail-1.5fd93079",
+  w30: "fanfest-pamphlet-thumbnail-1.af77b4fa", w31: "calendar-set-thumbnail-1.06eb91a5", w32: "postcard-book-2-thumbnail-1.a165a362", w33: "eorzea-travel-guide-thumbnail-1.d307cccc",
+};
+const imgUrl = id => IMG[id] ? IMG_BASE + IMG[id] + "_384.webp" : null;
 const M = "幕張メッセ", AEON = "イオンモール幕張新都心", PARK = "豊砂公園";
 const ACTS = [
   { id: "a1", title: "チョコボレースVR", place: M, tag: "特別先行体験", desc: "「ティフォニウム」で展開予定のVRアトラクションを先行体験。" },
@@ -439,7 +463,9 @@ function card(a, cat, mins) {
     const st = 12 * 60;
     openEditor({ id: null, kind: cat, ref: a.id, day: +state.view.day || 1, start: fmt(st), end: fmt(st + mins), title: a.title, place: a.place, cat, memo });
   };
+  const src = imgUrl(a.id);
   return el("div", { class: "act", style: `--cat:var(${CATS[cat].v})` },
+    src ? el("img", { class: "thumb", src, alt: a.title, loading: "lazy", referrerpolicy: "no-referrer", width: "384", height: "216", onerror: e => e.target.remove() }) : null,
     el("div", { class: "head" },
       el("div", {}, el("div", { class: "n" }, a.title, a.tag ? el("span", { class: "tag" }, a.tag) : null),
         el("div", { class: "p" }, a.place, n ? el("span", { class: "tag on" }, `予定に${n}件`) : null)),
@@ -470,7 +496,10 @@ function renderGoods() {
       save(); renderGoods();
       const f = document.getElementById(id); if (f) f.focus();
     } });
-    box.append(el("label", { for: id }, cb, el("span", {}, w.name), el("span", { class: "k" }, w.kind)));
+    const src = imgUrl(w.id);
+    box.append(el("label", { for: id }, cb,
+      src ? el("img", { class: "wt", src, alt: "", loading: "lazy", referrerpolicy: "no-referrer", width: "44", height: "44", onerror: e => { e.target.replaceWith(el("span", { class: "wt none" })); } }) : el("span", { class: "wt none" }),
+      el("span", {}, w.name), el("span", { class: "k" }, w.kind)));
   }
   pane.append(box);
   pane.append(el("p", { class: "note" }, el("a", { href: "https://store.jp.square-enix.com/estore/pages/sp_ff14_fanfest2026.aspx", target: "_blank", rel: "noopener", style: "color:var(--crystal)" }, "スクウェア・エニックス e-STORE の事前予約ページ")));
@@ -779,7 +808,7 @@ async function renderImage() {
     fx += w + 14;
   }
   ctx.fillStyle = P.muted; ctx.font = `500 ${portrait ? 18 : 17}px ${F.body}`;
-  const note = "非公式ファンメイドの予定表です。ステージの内容・時間は変更になる場合があります。";
+  const note = "非公式ファンメイドの予定表です。ステージの内容・時間は変更になる場合があります。 © SQUARE ENIX";
   if (portrait) ctx.fillText(note, pad, H - 50);
   else { ctx.textAlign = "right"; ctx.fillText(note, W - pad, fy + 4); ctx.textAlign = "left"; }
   return new Promise(res => cv.toBlob(b => res(b), "image/png"));
