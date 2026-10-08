@@ -1,0 +1,838 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ファンフェス2026 東京 予定表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Shippori+Mincho+B1:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: two-pane planner — candidate list (stages / activities / own plans) on the left, a two-day timetable on the right; export renders the same timetable to a canvas. Dark-first "silver night" palette. */
+:root{
+  --bg:#0e1322; --surface:#161c31; --surface-2:#1d2440; --line:#2a3354; --fg:#e7eaf3; --muted:#9099b6;
+  --silver:#cdd5ea; --crystal:#76bdf0; --warn:#f0b65a; --danger:#ef7a6c;
+  --c-stage:#76bdf0; --c-cc:#ef7a6c; --c-music:#b893ee; --c-act:#5ecca7; --c-goods:#e7bb55; --c-food:#ee9a6d; --c-other:#a2abc6;
+  --f-display:"Cinzel","Shippori Mincho B1",serif;
+  --f-jp-display:"Shippori Mincho B1","Hiragino Mincho ProN",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#eef0f6; --surface:#ffffff; --surface-2:#f4f6fb; --line:#d4d9e7; --fg:#1a2036; --muted:#5b6482;
+  --silver:#4d5a80; --crystal:#1d6aa6; --warn:#a96a00; --danger:#b8402f;
+  --c-stage:#2a7fc0; --c-cc:#c9503f; --c-music:#7f52c6; --c-act:#1f9670; --c-goods:#a8800f; --c-food:#c4632f; --c-other:#69728f;
+  color-scheme:light;}}
+:root[data-theme="light"]{
+  --bg:#eef0f6; --surface:#ffffff; --surface-2:#f4f6fb; --line:#d4d9e7; --fg:#1a2036; --muted:#5b6482;
+  --silver:#4d5a80; --crystal:#1d6aa6; --warn:#a96a00; --danger:#b8402f;
+  --c-stage:#2a7fc0; --c-cc:#c9503f; --c-music:#7f52c6; --c-act:#1f9670; --c-goods:#a8800f; --c-food:#c4632f; --c-other:#69728f;
+  color-scheme:light;}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;padding:0 16px;}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--crystal);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding-block:28px 64px;display:flex;flex-direction:column;gap:24px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:20px}
+.brand .eyebrow{font-family:var(--f-display);letter-spacing:.22em;font-size:12px;color:var(--muted)}
+.brand h1{margin:2px 0 4px;font-family:var(--f-jp-display);font-weight:800;font-size:clamp(26px,4vw,38px);line-height:1.2;text-wrap:balance}
+.brand h1 .en{font-family:var(--f-display);font-weight:700;color:var(--silver);letter-spacing:.06em}
+.brand .meta{color:var(--muted);font-size:13px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:8px;font-size:14px;line-height:1.3}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--crystal);border-color:var(--crystal);color:var(--bg);font-weight:700}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 50%,var(--line))}
+.btn.small{padding:4px 10px;font-size:13px;white-space:nowrap;flex-shrink:0}
+
+main.grid{display:grid;grid-template-columns:minmax(0,384px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){main.grid{grid-template-columns:minmax(0,1fr)}}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs button{flex:1 0 auto;white-space:nowrap;background:none;border:0;padding:12px 8px;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--crystal);font-weight:700}
+.pane{padding:14px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 140px);overflow:auto}
+@media (max-width:900px){.pane{max-height:none}}
+.daylabel{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;color:var(--muted);margin-top:6px}
+
+.cand{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);text-align:left;width:100%}
+.cand:hover{border-color:var(--muted)}
+.cand .chk{grid-row:span 3;width:20px;height:20px;border-radius:5px;border:1.5px solid var(--muted);margin-top:2px;display:grid;place-items:center;font-size:13px;line-height:1}
+.cand[aria-pressed="true"]{border-color:var(--cat)}
+.cand[aria-pressed="true"] .chk{background:var(--cat);border-color:var(--cat);color:var(--bg)}
+.cand .t{font-family:var(--f-mono);font-size:12.5px;color:var(--cat);font-variant-numeric:tabular-nums}
+.cand .n{font-weight:700;line-height:1.4}
+.cand .p{font-size:12.5px;color:var(--muted);line-height:1.5}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);margin-left:6px;vertical-align:1px;font-weight:500}
+.tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,var(--line))}
+
+.act{padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
+.act .head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.act .n{font-weight:700;line-height:1.4}
+.act .p{font-size:12.5px;color:var(--muted)}
+.act .d{font-size:13px;color:var(--muted);line-height:1.55}
+.sec{font-family:var(--f-jp-display);font-weight:800;font-size:15px;margin-top:8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sec small{font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted)}
+.act{border-left:3px solid var(--cat)}
+.tag.on{color:var(--crystal);border-color:color-mix(in srgb,var(--crystal) 50%,var(--line))}
+.wish{display:flex;flex-direction:column;gap:6px}
+.wish label{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:13.5px;line-height:1.4;cursor:pointer}
+.wish label:has(input:checked){border-color:var(--c-goods);background:color-mix(in srgb,var(--c-goods) 12%,var(--surface-2))}
+.wish input{accent-color:var(--c-goods);width:16px;height:16px;margin:0}
+.wish .k{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+.note{font-size:12.5px;color:var(--muted);line-height:1.6}
+
+form.custom{display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 11px;font-size:13px;display:flex;align-items:center;gap:6px}
+.chips button::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cat)}
+.chips button[aria-pressed="true"]{border-color:var(--cat);background:color-mix(in srgb,var(--cat) 16%,var(--bg))}
+
+/* timetable */
+.board{padding:14px;display:flex;flex-direction:column;gap:12px}
+.board-head{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+.daytabs{display:none;gap:6px}
+.daytabs button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;font-size:13px}
+.daytabs button[aria-pressed="true"]{border-color:var(--crystal);color:var(--crystal);font-weight:700}
+.summary{font-size:13px;color:var(--muted)}
+.summary b{color:var(--warn);font-weight:700}
+.tt{display:grid;grid-template-columns:48px repeat(2,minmax(0,1fr));gap:0 10px}
+.tt .dh{font-family:var(--f-display);font-size:13px;letter-spacing:.12em;color:var(--silver);padding:4px 0 8px;border-bottom:1px solid var(--line)}
+.tt .dh small{font-family:var(--f-mono);letter-spacing:.04em;color:var(--muted);margin-left:6px}
+.axis,.col{position:relative}
+.axis span{position:absolute;right:4px;transform:translateY(-50%);font-family:var(--f-mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.col{border-left:1px solid var(--line)}
+.col .hl{position:absolute;left:0;right:0;border-top:1px dashed color-mix(in srgb,var(--line) 80%,transparent)}
+.blk{position:absolute;padding:2px 3px;}
+.blk button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:1px;width:100%;height:100%;overflow:hidden;cursor:pointer;
+  border-radius:7px;padding:4px 8px;background:color-mix(in srgb,var(--cat) 18%,var(--surface));border:1px solid color-mix(in srgb,var(--cat) 55%,transparent);border-left:4px solid var(--cat)}
+.blk button:hover{background:color-mix(in srgb,var(--cat) 28%,var(--surface))}
+.blk button:focus-visible{outline:2px solid var(--crystal)}
+.blk .bt{font-family:var(--f-mono);font-size:11.5px;color:var(--cat);font-variant-numeric:tabular-nums;line-height:1.3}
+.blk .bn{font-weight:700;font-size:13px;line-height:1.35;word-break:break-all}
+.blk .bp{font-size:11.5px;color:var(--muted);line-height:1.35}
+.blk.short button{flex-direction:row;align-items:center;gap:6px;padding:0 8px;white-space:nowrap}
+.blk.short .bn{overflow:hidden;text-overflow:ellipsis;word-break:normal}
+.blk.clash button{box-shadow:inset 0 0 0 1.5px var(--warn)}
+.blk.clash .bt::after{content:" 重複";color:var(--warn);font-family:var(--f-body);font-weight:700}
+.empty-day{position:absolute;inset:40px 8px auto;font-size:13px;color:var(--muted);text-align:center}
+@media (max-width:640px){
+  .daytabs{display:flex}
+  .tt{grid-template-columns:44px minmax(0,1fr)}
+  .tt[data-show="1"] .d2,.tt[data-show="2"] .d1{display:none}
+}
+
+/* export */
+.export{padding:16px;display:flex;flex-direction:column;gap:12px}
+.export h2,.panel h2{margin:0;font-family:var(--f-jp-display);font-size:18px;font-weight:800}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--bg);padding:6px 12px;font-size:13px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--crystal);color:var(--bg);font-weight:700}
+.opts{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end}
+.opts .field{min-width:160px;flex:1}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:color-mix(in srgb,#000 55%,transparent);display:grid;place-items:center;padding:16px;z-index:20}
+.dialog{background:var(--surface);border:1px solid var(--line);border-radius:14px;width:min(520px,100%);max-height:calc(100% - 32px);overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.dialog.wide{width:min(980px,100%)}
+.dialog h3{margin:0;font-family:var(--f-jp-display);font-size:19px}
+.dialog .acts{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.dialog .acts div{display:flex;gap:8px}
+.preview{display:flex;justify-content:center;background:var(--bg);border-radius:10px;padding:12px}
+.preview img{max-height:60vh;max-width:100%;border-radius:6px;box-shadow:0 6px 24px color-mix(in srgb,#000 35%,transparent)}
+.mnav{display:none}
+@media (max-width:900px){
+  .wrap{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  .mnav{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;z-index:15;
+    background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+  .mnav button{background:none;border:0;border-radius:10px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12px;color:var(--muted);position:relative;min-height:48px}
+  .mnav .mi{font-size:18px;line-height:1.2}
+  .mnav button[aria-current="page"]{color:var(--crystal);font-weight:700;background:color-mix(in srgb,var(--crystal) 12%,transparent)}
+  .mnav .badge{position:absolute;top:2px;left:calc(50% + 10px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--crystal);color:var(--bg);font-size:11px;line-height:18px;font-weight:700;font-family:var(--f-mono)}
+  .mnav .badge:empty{display:none}
+  body[data-mview="cand"] #secBoard, body[data-mview="cand"] #secExport, body[data-mview="cand"] #secSrc,
+  body[data-mview="board"] #secCand, body[data-mview="board"] #secExport, body[data-mview="board"] #secSrc,
+  body[data-mview="export"] #secCand, body[data-mview="export"] #secBoard{display:none}
+  .top-actions #btnExportTop{display:none}
+  body .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+.toast{position:fixed;left:50%;width:max-content;max-width:calc(100% - 32px);text-align:center;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:14px;z-index:30}
+footer.src{font-size:12px;color:var(--muted);line-height:1.7}
+footer.src a{color:var(--crystal)}
+@media (prefers-reduced-motion:no-preference){.blk button{transition:background .15s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">FINAL FANTASY XIV · FAN FESTIVAL 2026 in TOKYO</div>
+      <h1>ファンフェス <span class="en">2026</span> 予定表</h1>
+      <div class="meta">2026.10.31 SAT – 11.01 SUN ／ 幕張メッセ 展示ホール1-7・イオンモール幕張新都心・豊砂公園</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost" id="btnReset" type="button">予定をすべて消す</button>
+      <button class="btn primary" id="btnExportTop" type="button">画像に書き出す</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel" id="secCand" aria-label="予定の候補">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-stage" aria-selected="true" data-pane="stage" type="button">ステージ</button>
+        <button role="tab" id="tab-act" aria-selected="false" data-pane="act" type="button">アクティビティ</button>
+        <button role="tab" id="tab-goods" aria-selected="false" data-pane="goods" type="button">グッズ</button>
+        <button role="tab" id="tab-food" aria-selected="false" data-pane="food" type="button">フード</button>
+        <button role="tab" id="tab-custom" aria-selected="false" data-pane="custom" type="button">自分の予定</button>
+      </div>
+      <div class="pane" id="pane-stage"></div>
+      <div class="pane" id="pane-act" hidden></div>
+      <div class="pane" id="pane-goods" hidden></div>
+      <div class="pane" id="pane-food" hidden></div>
+      <div class="pane" id="pane-custom" hidden>
+        <p class="note">物販・食事・待ち合わせ・移動など、自由に時間を入れられます。</p>
+        <form class="custom" id="customForm">
+          <div class="field"><label for="cTitle">予定の名前</label><input id="cTitle" required maxlength="40" placeholder="例：物販に並ぶ"></div>
+          <div class="field"><label>カテゴリ</label><div class="chips" id="cCats"></div></div>
+          <div class="row">
+            <div class="field"><label for="cDay">日</label><select id="cDay"><option value="1">DAY1 10/31(土)</option><option value="2">DAY2 11/1(日)</option></select></div>
+            <div class="field"><label for="cStart">開始</label><input id="cStart" type="time" step="300" value="12:00" required></div>
+            <div class="field"><label for="cEnd">終了</label><input id="cEnd" type="time" step="300" value="12:45" required></div>
+          </div>
+          <div class="field"><label for="cPlace">場所（任意）</label><input id="cPlace" maxlength="30" placeholder="例：ホール6 物販エリア"></div>
+          <div class="field"><label for="cMemo">メモ（任意）</label><input id="cMemo" maxlength="120" placeholder="例：FCメンバーと合流"></div>
+          <button class="btn primary" type="submit">予定に追加</button>
+        </form>
+      </div>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:24px;min-width:0">
+      <section class="panel board" id="secBoard" aria-label="タイムテーブル">
+        <div class="board-head">
+          <div class="summary" id="summary"></div>
+          <div class="daytabs" id="dayTabs">
+            <button type="button" data-d="1" aria-pressed="true">DAY1 10/31</button>
+            <button type="button" data-d="2" aria-pressed="false">DAY2 11/1</button>
+          </div>
+        </div>
+        <div class="tt" id="tt" data-show="1"></div>
+        <p class="note">ブロックをタップすると時間の変更・メモ・削除ができます。オレンジ枠は時間が重なっている予定です。</p>
+      </section>
+
+      <section class="panel export" id="secExport" aria-label="画像書き出し">
+        <h2>画像に書き出す</h2>
+        <div class="opts">
+          <div class="field"><label>向き</label><div class="seg" id="oOrient"><button type="button" data-v="portrait" aria-pressed="true">縦 1080×1920</button><button type="button" data-v="landscape" aria-pressed="false">横 1920×1080</button></div></div>
+          <div class="field"><label>日程</label><div class="seg" id="oDays"><button type="button" data-v="both" aria-pressed="true">両日</button><button type="button" data-v="1" aria-pressed="false">DAY1</button><button type="button" data-v="2" aria-pressed="false">DAY2</button></div></div>
+          <div class="field"><label>配色</label><div class="seg" id="oTheme"><button type="button" data-v="dark" aria-pressed="true">夜</button><button type="button" data-v="light" aria-pressed="false">昼</button></div></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="oName">見出し（キャラ名など）</label><input id="oName" maxlength="24" placeholder="例：Daikiの予定"></div>
+          <div class="field"><label for="oMemo">メモを画像に入れる</label><select id="oMemo"><option value="yes">入れる</option><option value="no">入れない</option></select></div>
+        </div>
+        <div><button class="btn primary" id="btnExport" type="button">画像を作る</button></div>
+      </section>
+
+      <footer class="src" id="secSrc">
+        ステージ時刻は 2026年10月5日発表の公式情報に基づきます。内容・時間は変更になる場合があります。ピアノコンサートとTHE PRIMALSのライブ配信は有料です。<br>
+        公式：<a href="https://fanfest.finalfantasyxiv.com/2026/jp/" target="_blank" rel="noopener">ファンフェスティバル 2026 特設サイト</a> ／ 本ツールは非公式のファンメイドです。予定はこのブラウザにだけ保存されます。
+      </footer>
+    </div>
+  </main>
+</div>
+
+<nav class="mnav" id="mnav" aria-label="画面の切り替え">
+  <button type="button" data-v="cand"><span class="mi" aria-hidden="true">＋</span>候補</button>
+  <button type="button" data-v="board"><span class="mi" aria-hidden="true">▤</span>予定表<span class="badge" id="mnavCount"></span></button>
+  <button type="button" data-v="export"><span class="mi" aria-hidden="true">⇩</span>書き出し</button>
+</nav>
+<div id="modalRoot"></div>
+
+<script>
+(() => {
+"use strict";
+const STORE_KEY = "ff14-fanfest2026-tokyo-plan-v1";
+const DAYS = { 1: { label: "DAY 1", date: "10.31", dow: "SAT" }, 2: { label: "DAY 2", date: "11.01", dow: "SUN" } };
+const CATS = {
+  stage: { name: "ステージ", v: "--c-stage" },
+  cc:    { name: "大会", v: "--c-cc" },
+  music: { name: "音楽", v: "--c-music" },
+  act:   { name: "アクティビティ", v: "--c-act" },
+  goods: { name: "物販", v: "--c-goods" },
+  food:  { name: "食事・休憩", v: "--c-food" },
+  other: { name: "その他", v: "--c-other" },
+};
+const CUSTOM_CATS = ["goods", "food", "act", "other"];
+const STAGE_PLACE = "幕張メッセ ステージ";
+const STAGES = [
+  { id: "s1", day: 1, start: "11:00", end: "13:00", title: "基調講演", cat: "stage", cast: "吉田直樹", note: "全国イオンシネマでライブビューイング" },
+  { id: "s2", day: 1, start: "15:00", end: "16:30", title: "CCリージョンチャンピオンシップ 2026 Japan セミファイナル", cat: "cc", cast: "央川とうい（MC）、so5u（実況）、せらヴぃ・吉田直樹（解説）" },
+  { id: "s3", day: 1, start: "16:30", end: "17:00", title: "吉田Pの一問一答タイムアタック！", cat: "stage", cast: "吉田直樹、室内俊夫" },
+  { id: "s4", day: 1, start: "17:00", end: "18:30", title: "CCリージョンチャンピオンシップ 2026 Japan ファイナル", cat: "cc", cast: "央川とうい（MC）、so5u（実況）、せらヴぃ・吉田直樹（解説）" },
+  { id: "s5", day: 1, start: "19:30", end: "20:30", title: "ピアノコンサート", cat: "music", cast: "Keiko（ゲスト：Amanda Achen）", paid: true },
+  { id: "s6", day: 2, start: "10:30", end: "12:00", title: "開発パネル", cat: "stage", cast: "今村貴文、石川大樹、祖堅正慶" },
+  { id: "s7", day: 2, start: "12:30", end: "13:30", title: "LIVE Q&A", cat: "stage", cast: "吉田直樹、室内俊夫" },
+  { id: "s8", day: 2, start: "13:50", end: "15:00", title: "ミラプリコレクション", cat: "stage", cast: "ゆいP（おかずクラブ）、室内俊夫" },
+  { id: "s9", day: 2, start: "15:30", end: "17:30", title: "直樹の部屋", cat: "stage", cast: "吉田直樹、室内俊夫／ゲスト：濱田龍臣、k4sen、SHAKA、赤見かるび、Clutch_Fi、猫麦とろろ、おぼ、うるか、トナカイト、Sasatikk" },
+  { id: "s10", day: 2, start: "19:30", end: "20:30", title: "スペシャルライブ THE PRIMALS", cat: "music", cast: "THE PRIMALS（ゲスト：AKINO、伊藤友馬）", paid: true, note: "全国イオンシネマでライブビューイング" },
+];
+const M = "幕張メッセ", AEON = "イオンモール幕張新都心", PARK = "豊砂公園";
+const ACTS = [
+  { id: "a1", title: "チョコボレースVR", place: M, tag: "特別先行体験", desc: "「ティフォニウム」で展開予定のVRアトラクションを先行体験。" },
+  { id: "a2", title: "エッダの鞄", place: M, tag: "特別先行体験", desc: "クリエイター集団「第四境界」とのコラボARG。" },
+  { id: "a3", title: "YOKERO -エターナルクイーン討滅戦-", place: M, desc: "フロアを行き交う白線を踏まずに避け続ける体験型企画。" },
+  { id: "a4", title: "ダンシング・グリーンと踊ろう！", place: M, desc: "自分の動きに合わせて画面の中のダンシング・グリーンが踊る。" },
+  { id: "a5", title: "リアル謎解きゲーム（新作）", place: AEON, desc: "LINEを使う周遊型の謎解き。所要時間は長めに見ておくと安心。" },
+  { id: "a6", title: "MTG ―― FINAL FANTASY カード体験＆展示", place: M, desc: "体験プレイと900枚以上のカード展示、カード型フォトスポット。" },
+  { id: "a7", title: "チェキ撮影・プリント体験", place: M, desc: "アルカディア闘士のフレームで撮影。スクショのプリントもできる。" },
+  { id: "a8", title: "ドマ式麻雀 修練場", place: M, desc: "リアル麻雀。プロ雀士と1日店長が卓を盛り上げ、初心者サポートあり。" },
+  { id: "a9", title: "エオルゼア検定", place: M, desc: "これまでの旅を思い出す全8問のテスト。" },
+  { id: "a10", title: "ナイスヘッド・ガーデン", place: M, desc: "ホッケー、水でっぽう、ボウリングなどのミニゲーム。" },
+  { id: "a11", title: "古のアラグの操作盤", place: M, desc: "2人で操作する巨大コントローラーでタイタン討伐。" },
+  { id: "a12", title: "F.A.T.E. スペースインベーダー ギガマックス", place: M, desc: "アウトランナーを操作して迫るインベーダーを迎え撃つ。" },
+  { id: "a13", title: "だいたい合ってるNPC名鑑 体験コーナー", place: M, desc: "新作カードゲーム〈新生エオルゼア編〉を遊べる。" },
+  { id: "a14", title: "FFTCG 体験コーナー", place: M, desc: "ファイナルファンタジー・トレーディングカードゲームのルール体験会。" },
+  { id: "a15", title: "フォトスポット：でぶチョコボ", place: AEON, desc: "でぶチョコボと記念撮影。" },
+  { id: "a16", title: "フォトスポット", place: M, desc: "FFXIVの世界に入り込むようなフォトスポット各種。" },
+  { id: "a17", title: "メッセージボード／来場者マップ", place: M, desc: "記念メッセージの書き込みと、住んでいる場所にシールを貼る来場者マップ。" },
+  { id: "a18", title: "シュガーライオットのアトリエボード", place: M, desc: "ボードに色を塗ったり絵を描いたりできるコーナー。" },
+];
+const EXHIBITS = [
+  { id: "e1", title: "FFVII リメイクシリーズ", place: M, desc: "バスターソードとハーディ＝デイトナの撮影スポット。" },
+  { id: "e2", title: "ディシディア デュエルム FF", place: M, desc: "アビリティイラストの展示。" },
+  { id: "e3", title: "FF レゾナンス", place: M, desc: "サボテンダーと撮れるフォトスポット。" },
+  { id: "e4", title: "GALLERIAコラボモデル展示", place: M, desc: "2027年発売のFFXIVデザインPCを展示。" },
+  { id: "e5", title: "推奨モニター「GigaCrysta」", place: M, desc: "FFXIV推奨モニターの展示。" },
+];
+const GOODS_BOOTHS = [
+  { id: "g1", title: "オフィシャルグッズ販売", place: M, desc: "当日から使えるグッズを多数販売。一部は会場で扱いがない場合あり。", wish: true },
+  { id: "g2", title: "FFXIV POP UP STORE", place: AEON, desc: "ファンフェス第1弾・第2弾グッズや、過去イベントで出たグッズを販売。" },
+  { id: "g3", title: "ナインズ・キャッチャー", place: M, tag: "オンラインあり", desc: "新登場のクレーンゲーム。" },
+  { id: "g4", title: "リアルトレジャーハント", place: M, desc: "カプセルトイコーナー。" },
+  { id: "g5", title: "至天の座アルカディアくじ", place: M, tag: "オンラインあり", desc: "アルカディアをテーマにしたくじ。" },
+  { id: "g6", title: "クラフトマンズワークショップ", place: M, desc: "ロゴやミニオンのシートを選んでトートバッグを作り、持ち帰れる。" },
+  { id: "g7", title: "ジョブイメージ オードパルファム テスター＆販売", place: M, desc: "ジョブイメージの香水を試して買える。" },
+];
+const FOODS = [
+  { id: "f1", title: "出張エオルゼアカフェ", place: PARK, desc: "今回も出張店が出る予定。メニューは続報待ち。" },
+  { id: "f2", title: "アニメイトカフェ 出張版", place: PARK, desc: "コラボメニューと特典は続報待ち。" },
+  { id: "f3", title: "キッチンカー", place: PARK, desc: "豊砂公園のフードエリア。一部の店でここだけのコラボメニューあり。" },
+];
+const GOODS_ITEMS = [
+  ["GOODS","オルゴール 遠き日の思い出"],["GOODS","スティックライト〈モーグリ〉"],["GOODS","ぬいぐるみ〈カリュクス〉"],["FASHION","大判ストール〈リビング・メモリー〉"],
+  ["GOODS","キラキラシール付きぬいぐるみ〈黄金のアルパカ〉"],["FASHION","Reimagined Silver Earring Emet-Selch"],["GOODS","ミニチュアフィギュアコレクション Vol.3"],
+  ["GOODS","ミニパペットぬいぐるみコレクション Vol.3"],["GOODS","ラバーマグネットコレクション Vol.3"],["GOODS","ネオンライト〈モーグリ〉"],
+  ["GOODS","フェイクレザーチャーム〈モグモグクッキー〉"],["FOOD","グミ〈エナジードリンクGG〉"],["FOOD","でぶチョコボカレー"],["FASHION","ファンフェス2026 マフラータオル"],
+  ["GOODS","だいたい合ってるNPC名鑑〈新生エオルゼア編〉"],["GOODS","ガラスプレートコレクション Vol.1"],["GOODS","オードパルファム（全21種）"],
+  ["FASHION","セニョールウソウソ・パック"],["GOODS","クリアキーホルダー〈ファダニエルのクリスタル〉"],["GOODS","クリアキーホルダー〈エリディブスのクリスタル〉"],
+  ["GOODS","ネオンパラソル"],["GOODS","付箋セット〈フィールドマーカー〉"],["FASHION","Bomber Jacket - ALPHA SQUADRON"],
+  ["FASHION","Sugar Riot Splash Sweatshirt Black"],["FASHION","Sugar Riot Splash Sweatshirt Gray"],["FASHION","Eorzea Neon Tee Black"],
+  ["FASHION","Tシャツ〈スーベニア・オブ・ストレイバロー〉"],["MUSIC","Piano Collections - Till Dawn My Tears Flow"],["MUSIC","Pulse: FFXIV Remix Album Vol. 3"],
+  ["BOOKS","ファンフェス2026 東京 オフィシャルパンフレット"],["BOOKS","オフィシャルカレンダーセット2027"],["BOOKS","ポストカードブック Volume II"],
+  ["BOOKS","エオルゼア観光案内"],
+].map(([k, n], i) => ({ id: "w" + (i + 1), kind: k, name: n }));
+
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "style") n.setAttribute("style", v);
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) n.append(c.nodeType ? c : String(c));
+  return n;
+};
+const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+const fmt = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+const uid = () => Math.random().toString(36).slice(2, 9);
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+/* ---------- state ---------- */
+const sampleState = () => ({
+  items: [
+    ...["s1", "s7", "s9", "s10"].map(id => fromStage(STAGES.find(s => s.id === id))),
+    { id: uid(), kind: "custom", day: 1, start: "13:15", end: "14:30", title: "物販に並ぶ（例）", place: "", cat: "goods", memo: "サンプルの予定です" },
+    { id: uid(), kind: "act", ref: "a1", day: 2, start: "17:45", end: "18:15", title: "チョコボレースVR", place: "幕張メッセ", cat: "act", memo: "" },
+  ],
+  exp: { orient: "portrait", days: "both", theme: "dark", name: "", memo: "yes" },
+  view: { tab: "stage", day: "1" },
+});
+function fromStage(s) {
+  return { id: uid(), kind: "stage", ref: s.id, day: s.day, start: s.start, end: s.end, title: s.title, place: STAGE_PLACE, cat: s.cat, memo: s.paid ? "配信は有料" : "" };
+}
+let state;
+try { state = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { state = null; }
+if (!state || !Array.isArray(state.items)) state = sampleState();
+state.exp = Object.assign(sampleState().exp, state.exp || {});
+if (!Array.isArray(state.wish)) state.wish = [];
+state.view = Object.assign({ tab: "stage", day: "1" }, state.view || {});
+const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} };
+
+/* ---------- layout math ---------- */
+function layoutDay(items) {
+  const arr = items.map(it => ({ it, s: toMin(it.start), e: Math.max(toMin(it.end), toMin(it.start) + 5) })).sort((a, b) => a.s - b.s || b.e - a.e);
+  let cluster = [], clusterEnd = -1, lanesEnd = [];
+  const out = [];
+  const flush = () => { const n = lanesEnd.length; cluster.forEach(c => c.cols = n); out.push(...cluster); cluster = []; lanesEnd = []; };
+  for (const a of arr) {
+    if (a.s >= clusterEnd && cluster.length) flush();
+    let lane = lanesEnd.findIndex(end => end <= a.s);
+    if (lane < 0) { lane = lanesEnd.length; lanesEnd.push(a.e); } else lanesEnd[lane] = a.e;
+    a.lane = lane; cluster.push(a); clusterEnd = Math.max(clusterEnd, a.e);
+  }
+  if (cluster.length) flush();
+  for (const a of out) a.clash = out.some(b => b !== a && a.s < b.e && b.s < a.e);
+  return out;
+}
+function range(items) {
+  let lo = 10 * 60, hi = 21 * 60;
+  for (const it of items) { lo = Math.min(lo, toMin(it.start)); hi = Math.max(hi, toMin(it.end)); }
+  return [Math.floor(lo / 60) * 60, Math.ceil(hi / 60) * 60];
+}
+const itemsOf = d => state.items.filter(i => i.day === +d);
+function clashCount() { let n = 0; for (const d of [1, 2]) n += layoutDay(itemsOf(d)).filter(a => a.clash).length; return n; }
+
+/* ---------- left panel ---------- */
+function renderStages() {
+  const pane = $("#pane-stage"); pane.replaceChildren();
+  pane.append(el("p", { class: "note" }, "公式発表済みのステージです。タップで予定に追加・解除できます。"));
+  for (const d of [1, 2]) {
+    pane.append(el("div", { class: "daylabel" }, `${DAYS[d].label} · ${DAYS[d].date} ${DAYS[d].dow}`));
+    for (const s of STAGES.filter(s => s.day === d)) {
+      const on = state.items.some(i => i.ref === s.id);
+      pane.append(el("button", {
+        class: "cand", type: "button", "aria-pressed": on ? "true" : "false", style: `--cat:var(${CATS[s.cat].v})`,
+        onclick: () => { toggleStage(s); },
+      },
+        el("span", { class: "chk", "aria-hidden": "true" }, on ? "✓" : ""),
+        el("span", { class: "t" }, `${s.start}–${s.end}`, el("span", { class: "tag" }, CATS[s.cat].name), s.paid ? el("span", { class: "tag warn" }, "配信有料") : null),
+        el("span", { class: "n" }, s.title),
+        el("span", { class: "p" }, s.cast + (s.note ? ` ／ ${s.note}` : "")),
+      ));
+    }
+  }
+  pane.append(el("p", { class: "note" }, "会場生中継（両日）：ゆいP（おかずクラブ）、にしむらベイベー"));
+}
+function toggleStage(s) {
+  const idx = state.items.findIndex(i => i.ref === s.id);
+  if (idx >= 0) { state.items.splice(idx, 1); toast(`「${s.title}」を外しました`); }
+  else { state.items.push(fromStage(s)); toast(`「${s.title}」を追加しました`); }
+  commit();
+}
+function card(a, cat, mins) {
+  const n = state.items.filter(i => i.ref === a.id).length;
+  const add = () => {
+    let memo = "";
+    if (a.wish && state.wish.length) memo = "買う：" + GOODS_ITEMS.filter(w => state.wish.includes(w.id)).map(w => w.name).join("、");
+    const st = 12 * 60;
+    openEditor({ id: null, kind: cat, ref: a.id, day: +state.view.day || 1, start: fmt(st), end: fmt(st + mins), title: a.title, place: a.place, cat, memo });
+  };
+  return el("div", { class: "act", style: `--cat:var(${CATS[cat].v})` },
+    el("div", { class: "head" },
+      el("div", {}, el("div", { class: "n" }, a.title, a.tag ? el("span", { class: "tag" }, a.tag) : null),
+        el("div", { class: "p" }, a.place, n ? el("span", { class: "tag on" }, `予定に${n}件`) : null)),
+      el("button", { class: "btn small", type: "button", onclick: add }, "予定に追加")),
+    el("div", { class: "d" }, a.desc));
+}
+function renderActs() {
+  const pane = $("#pane-act"); pane.replaceChildren();
+  pane.append(el("p", { class: "note" }, "公式のフロア情報に載っている企画です。時間は自分で決めて追加します。事前予約・抽選になる企画や有料の企画もあるので、公式の続報を確認してください。"));
+  pane.append(el("div", { class: "sec" }, "アクティビティ", el("small", {}, `${ACTS.length}件`)));
+  ACTS.forEach(a => pane.append(card(a, "act", 30)));
+  pane.append(el("div", { class: "sec" }, "展示", el("small", {}, `${EXHIBITS.length}件`)));
+  EXHIBITS.forEach(a => pane.append(card(a, "act", 15)));
+}
+function renderGoods() {
+  const pane = $("#pane-goods"); pane.replaceChildren();
+  pane.append(el("p", { class: "note" }, "物販・くじ・ワークショップなどのブースです。会場は混雑が予想されるので、公式は事前予約での購入をすすめています。"));
+  pane.append(el("div", { class: "sec" }, "ブース", el("small", {}, `${GOODS_BOOTHS.length}件`)));
+  GOODS_BOOTHS.forEach(a => pane.append(card(a, "goods", 45)));
+  const cnt = state.wish.length;
+  pane.append(el("div", { class: "sec" }, "欲しい物リスト", el("small", {}, cnt ? `${cnt}点チェック中` : "第3弾グッズ")));
+  pane.append(el("p", { class: "note" }, "チェックしておくと、「オフィシャルグッズ販売」を予定に追加するときにメモへ自動で入ります。価格は公式ストアで確認してください。"));
+  const box = el("div", { class: "wish" });
+  for (const w of GOODS_ITEMS) {
+    const id = "wish-" + w.id;
+    const cb = el("input", { type: "checkbox", id, checked: state.wish.includes(w.id), onchange: e => {
+      state.wish = e.target.checked ? [...state.wish, w.id] : state.wish.filter(x => x !== w.id);
+      save(); renderGoods();
+      const f = document.getElementById(id); if (f) f.focus();
+    } });
+    box.append(el("label", { for: id }, cb, el("span", {}, w.name), el("span", { class: "k" }, w.kind)));
+  }
+  pane.append(box);
+  pane.append(el("p", { class: "note" }, el("a", { href: "https://store.jp.square-enix.com/estore/pages/sp_ff14_fanfest2026.aspx", target: "_blank", rel: "noopener", style: "color:var(--crystal)" }, "スクウェア・エニックス e-STORE の事前予約ページ")));
+}
+function renderFood() {
+  const pane = $("#pane-food"); pane.replaceChildren();
+  pane.append(el("p", { class: "note" }, "フードエリアは幕張メッセ隣の豊砂公園です。メニューは続報待ちなので、決まったら予定のメモに書き足してください。"));
+  FOODS.forEach(a => pane.append(card(a, "food", 45)));
+  pane.append(el("div", { class: "sec" }, "グッズ売り場の食べ物"));
+  pane.append(el("p", { class: "note" }, "「グミ〈エナジードリンクGG〉」と「でぶチョコボカレー」はグッズとして販売されます。グッズタブの欲しい物リストに入っています。"));
+}
+let customCat = "goods";
+function renderCustomCats() {
+  const box = $("#cCats"); box.replaceChildren();
+  for (const c of CUSTOM_CATS) box.append(el("button", { type: "button", "aria-pressed": c === customCat ? "true" : "false", style: `--cat:var(${CATS[c].v})`, onclick: () => { customCat = c; renderCustomCats(); } }, CATS[c].name));
+}
+$("#customForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const it = { id: uid(), kind: "custom", day: +$("#cDay").value, start: $("#cStart").value, end: $("#cEnd").value, title: $("#cTitle").value.trim(), place: $("#cPlace").value.trim(), cat: customCat, memo: $("#cMemo").value.trim() };
+  if (!it.title) return;
+  if (toMin(it.end) <= toMin(it.start)) { toast("終了時刻は開始より後にしてください"); return; }
+  state.items.push(it); commit(); toast(`「${it.title}」を追加しました`);
+  $("#cTitle").value = ""; $("#cMemo").value = ""; $("#cPlace").value = "";
+});
+
+function setTab(t) {
+  state.view.tab = t;
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.pane === t ? "true" : "false"));
+  ["stage", "act", "goods", "food", "custom"].forEach(p => $("#pane-" + p).hidden = p !== t);
+  save();
+}
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.pane)));
+
+/* ---------- timetable ---------- */
+const PPM = 1.25; // px per minute on screen
+function renderBoard() {
+  const tt = $("#tt"); tt.replaceChildren();
+  tt.dataset.show = state.view.day;
+  const [lo, hi] = range(state.items);
+  const h = (hi - lo) * PPM;
+  tt.append(el("div"), ...[1, 2].map(d => el("div", { class: "dh d" + d }, DAYS[d].label, el("small", {}, `${DAYS[d].date} ${DAYS[d].dow}`))));
+  const axis = el("div", { class: "axis", style: `height:${h}px` });
+  for (let m = lo; m <= hi; m += 60) axis.append(el("span", { style: `top:${(m - lo) * PPM}px` }, fmt(m)));
+  tt.append(axis);
+  for (const d of [1, 2]) {
+    const col = el("div", { class: "col d" + d, style: `height:${h}px` });
+    for (let m = lo; m <= hi; m += 60) col.append(el("div", { class: "hl", style: `top:${(m - lo) * PPM}px` }));
+    const laid = layoutDay(itemsOf(d));
+    if (!laid.length) col.append(el("div", { class: "empty-day" }, "まだ予定がありません。左のリストから追加できます。"));
+    for (const a of laid) {
+      const it = a.it, top = (a.s - lo) * PPM, height = Math.max((a.e - a.s) * PPM, 22);
+      const tall = height >= 54;
+      col.append(el("div", { class: "blk" + (a.clash ? " clash" : "") + (height < 46 ? " short" : ""), style: `top:${top}px;height:${height}px;left:${a.lane / a.cols * 100}%;width:${100 / a.cols}%;--cat:var(${CATS[it.cat].v})` },
+        el("button", { type: "button", title: `${it.start}–${it.end} ${it.title}`, onclick: () => openEditor(it) },
+          el("span", { class: "bt" }, height < 46 ? it.start : `${it.start}–${it.end}`),
+          el("span", { class: "bn" }, it.title),
+          tall && (it.place || it.memo) ? el("span", { class: "bp" }, [it.place, it.memo].filter(Boolean).join(" ・ ")) : null)));
+    }
+    tt.append(col);
+  }
+  const n = state.items.length, c = clashCount();
+  const mc = document.getElementById("mnavCount"); if (mc) mc.textContent = n ? String(n) : "";
+  $("#summary").replaceChildren(`予定 ${n}件`, c ? el("span", {}, " ／ ", el("b", {}, `重複 ${c}件`)) : " ／ 重複なし");
+  document.querySelectorAll("#dayTabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.d === state.view.day ? "true" : "false"));
+}
+document.querySelectorAll("#dayTabs button").forEach(b => b.addEventListener("click", () => { state.view.day = b.dataset.d; save(); renderBoard(); }));
+
+/* ---------- modal ---------- */
+function closeModal() { $("#modalRoot").replaceChildren(); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+function modal(content, wide) {
+  const scrim = el("div", { class: "scrim", onclick: e => { if (e.target === scrim) closeModal(); } }, el("div", { class: "dialog" + (wide ? " wide" : ""), role: "dialog", "aria-modal": "true" }, content));
+  $("#modalRoot").replaceChildren(scrim);
+  const f = scrim.querySelector("input,button"); if (f) f.focus();
+}
+function openEditor(it) {
+  const isNew = !it.id;
+  const draft = Object.assign({}, it);
+  let delArmed = false;
+  const catField = draft.kind === "custom" ? el("div", { class: "field" }, el("label", { for: "eCat" }, "カテゴリ"),
+    el("select", { id: "eCat" }, ...CUSTOM_CATS.map(c => el("option", { value: c, selected: c === draft.cat }, CATS[c].name)))) : null;
+  const form = el("form", { class: "custom" },
+    el("h3", {}, isNew ? "予定に追加" : "予定を編集"),
+    el("div", { class: "field" }, el("label", { for: "eTitle" }, "予定の名前"), el("input", { id: "eTitle", value: draft.title, maxlength: "60", required: true })),
+    el("div", { class: "row" },
+      el("div", { class: "field" }, el("label", { for: "eDay" }, "日"), el("select", { id: "eDay" }, el("option", { value: "1", selected: draft.day === 1 }, "DAY1 10/31(土)"), el("option", { value: "2", selected: draft.day === 2 }, "DAY2 11/1(日)"))),
+      el("div", { class: "field" }, el("label", { for: "eStart" }, "開始"), el("input", { id: "eStart", type: "time", step: "300", value: draft.start, required: true })),
+      el("div", { class: "field" }, el("label", { for: "eEnd" }, "終了"), el("input", { id: "eEnd", type: "time", step: "300", value: draft.end, required: true }))),
+    catField,
+    el("div", { class: "field" }, el("label", { for: "ePlace" }, "場所"), el("input", { id: "ePlace", value: draft.place || "", maxlength: "30" })),
+    el("div", { class: "field" }, el("label", { for: "eMemo" }, "メモ"), el("input", { id: "eMemo", value: draft.memo || "", maxlength: "160" })),
+    draft.kind === "stage" ? el("p", { class: "note" }, "公式ステージの時間を変えると、画像にも変更後の時間が出ます。") : null,
+    el("p", { class: "note", id: "eErr", role: "alert" }),
+    el("div", { class: "acts" },
+      isNew ? el("span") : el("button", { class: "btn danger", type: "button", id: "eDel", onclick: e => {
+        if (!delArmed) { delArmed = true; e.currentTarget.textContent = "もう一度押すと削除"; return; }
+        state.items = state.items.filter(i => i.id !== it.id); closeModal(); commit(); toast("削除しました");
+      } }, "削除"),
+      el("div", {}, el("button", { class: "btn", type: "button", onclick: closeModal }, "キャンセル"), el("button", { class: "btn primary", type: "submit" }, isNew ? "追加" : "保存"))));
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const nv = { title: $("#eTitle").value.trim(), day: +$("#eDay").value, start: $("#eStart").value, end: $("#eEnd").value, place: $("#ePlace").value.trim(), memo: $("#eMemo").value.trim() };
+    if (catField) nv.cat = $("#eCat").value;
+    if (!nv.title) { $("#eErr").textContent = "予定の名前を入れてください。"; return; }
+    if (!nv.start || !nv.end || toMin(nv.end) <= toMin(nv.start)) { $("#eErr").textContent = "終了時刻は開始時刻より後にしてください。"; return; }
+    if (isNew) state.items.push(Object.assign(draft, nv, { id: uid() }));
+    else Object.assign(state.items.find(i => i.id === it.id), nv);
+    closeModal(); commit(); toast(isNew ? `「${nv.title}」を追加しました` : "保存しました");
+  });
+  modal(form);
+}
+
+let toastTimer;
+function toast(msg) {
+  document.querySelectorAll(".toast").forEach(t => t.remove());
+  const t = el("div", { class: "toast", role: "status" }, msg); document.body.append(t);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 2200);
+}
+
+$("#btnReset").addEventListener("click", () => {
+  modal(el("div", { style: "display:flex;flex-direction:column;gap:12px" },
+    el("h3", {}, "予定をすべて消しますか？"),
+    el("p", { class: "note" }, `いま入っている ${state.items.length}件の予定が消えます。元に戻せません。`),
+    el("div", { class: "acts" }, el("span"), el("div", {},
+      el("button", { class: "btn", type: "button", onclick: closeModal }, "やめる"),
+      el("button", { class: "btn danger", type: "button", onclick: () => { state.items = []; closeModal(); commit(); toast("すべて消しました"); } }, "すべて消す")))));
+});
+
+/* ---------- export options ---------- */
+function bindSeg(id, key) {
+  const box = $(id);
+  const sync = () => box.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.exp[key] ? "true" : "false"));
+  box.querySelectorAll("button").forEach(b => b.addEventListener("click", () => { state.exp[key] = b.dataset.v; sync(); save(); }));
+  sync();
+}
+bindSeg("#oOrient", "orient"); bindSeg("#oDays", "days"); bindSeg("#oTheme", "theme");
+$("#oName").value = state.exp.name; $("#oMemo").value = state.exp.memo;
+$("#oName").addEventListener("input", e => { state.exp.name = e.target.value; save(); });
+$("#oMemo").addEventListener("change", e => { state.exp.memo = e.target.value; save(); });
+
+/* ---------- canvas render ---------- */
+const PAL = {
+  dark: { bg1: "#0b1020", bg2: "#18213d", panel: "rgba(255,255,255,0.035)", line: "rgba(205,213,234,0.16)", fg: "#eef1f8", muted: "#98a1bf", silver: "#d4dbee", glow: "rgba(118,189,240,0.20)",
+    cat: { stage: "#76bdf0", cc: "#ef7a6c", music: "#b893ee", act: "#5ecca7", goods: "#e7bb55", food: "#ee9a6d", other: "#a2abc6" } },
+  light: { bg1: "#f6f7fb", bg2: "#e3e8f4", panel: "rgba(255,255,255,0.75)", line: "rgba(40,52,90,0.14)", fg: "#161c31", muted: "#5b6482", silver: "#3d4a72", glow: "rgba(29,106,166,0.12)",
+    cat: { stage: "#2a7fc0", cc: "#c9503f", music: "#7f52c6", act: "#1f9670", goods: "#a8800f", food: "#c4632f", other: "#69728f" } },
+};
+const F = { body: '"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif', jp: '"Shippori Mincho B1","Hiragino Mincho ProN",serif', en: '"Cinzel","Shippori Mincho B1",serif', mono: '"IBM Plex Mono",ui-monospace,monospace' };
+
+async function ensureFonts(text) {
+  if (!document.fonts || !document.fonts.load) return;
+  const t = text + "0123456789:–・／DAYSATSUN";
+  try {
+    await Promise.all([
+      document.fonts.load(`700 20px "Zen Kaku Gothic New"`, t), document.fonts.load(`500 20px "Zen Kaku Gothic New"`, t),
+      document.fonts.load(`800 20px "Shippori Mincho B1"`, t), document.fonts.load(`700 20px "Cinzel"`, "FINAL FANTASY XIV FAN FESTIVAL 2026 TOKYO DAY"),
+      document.fonts.load(`500 20px "IBM Plex Mono"`, "0123456789:–"),
+    ]);
+  } catch (e) {}
+}
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+function rr(ctx, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function wrapLines(ctx, text, maxW) {
+  const lines = []; let cur = "";
+  for (const ch of Array.from(text)) {
+    if (ctx.measureText(cur + ch).width > maxW && cur) { lines.push(cur); cur = ch.trim() ? ch : ""; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+function drawLines(ctx, lines, x, y, lh, maxBottom, maxW) {
+  for (let i = 0; i < lines.length; i++) {
+    if (y + lh > maxBottom + 0.5) break;
+    let s = lines[i];
+    const lastFit = y + lh * 2 > maxBottom + 0.5 && i < lines.length - 1;
+    if (lastFit) { while (s.length && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1); s += "…"; }
+    ctx.fillText(s, x, y); y += lh;
+    if (lastFit) break;
+  }
+  return y;
+}
+
+async function renderImage() {
+  const ex = state.exp, P = PAL[ex.theme] || PAL.dark;
+  const portrait = ex.orient === "portrait";
+  const W = portrait ? 1080 : 1920, H = portrait ? 1920 : 1080;
+  const days = ex.days === "both" ? [1, 2] : [+ex.days];
+  const items = state.items.filter(i => days.includes(i.day));
+  await ensureFonts(items.map(i => i.title + i.place + i.memo).join("") + (ex.name || "") + "幕張メッセ予定表ファンフェスティバル東京非公式ファンメイド内容変更場合" + Object.values(CATS).map(c => c.name).join(""));
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d"); ctx.textBaseline = "top";
+
+  // background
+  const g = ctx.createLinearGradient(0, 0, W * 0.4, H); g.addColorStop(0, P.bg2); g.addColorStop(1, P.bg1);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const rg = ctx.createRadialGradient(W * 0.88, 0, 0, W * 0.88, 0, W * 0.7); rg.addColorStop(0, P.glow); rg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+  // faint crystal facets
+  ctx.strokeStyle = P.line; ctx.lineWidth = 1.5;
+  const cx = W - (portrait ? 110 : 130), cy = portrait ? 120 : 100, cr = portrait ? 70 : 64;
+  ctx.beginPath(); ctx.moveTo(cx, cy - cr * 1.5); ctx.lineTo(cx + cr * 0.7, cy); ctx.lineTo(cx, cy + cr * 1.5); ctx.lineTo(cx - cr * 0.7, cy); ctx.closePath(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - cr * 1.5); ctx.lineTo(cx, cy + cr * 1.5); ctx.moveTo(cx - cr * 0.7, cy); ctx.lineTo(cx + cr * 0.7, cy); ctx.stroke();
+
+  const pad = portrait ? 64 : 64;
+  // header
+  let y = portrait ? 70 : 52;
+  ctx.fillStyle = P.muted; ctx.font = `700 ${portrait ? 22 : 22}px ${F.en}`;
+  ctx.letterSpacing = "6px";
+  ctx.fillText("FINAL FANTASY XIV  FAN FESTIVAL 2026 in TOKYO", pad, y);
+  ctx.letterSpacing = "0px";
+  y += portrait ? 44 : 40;
+  ctx.fillStyle = P.fg; ctx.font = `800 ${portrait ? 64 : 56}px ${F.jp}`;
+  const headline = (ex.name || "").trim() || "ファンフェス予定表";
+  const hl = wrapLines(ctx, headline, W - pad * 2 - 200);
+  y = drawLines(ctx, hl.slice(0, 2), pad, y, portrait ? 80 : 68, y + (portrait ? 160 : 136), W - pad * 2 - 200);
+  ctx.fillStyle = P.muted; ctx.font = `500 ${portrait ? 24 : 22}px ${F.body}`;
+  ctx.fillText("2026.10.31 SAT – 11.01 SUN ／ 幕張メッセ・イオンモール幕張新都心", pad, y + 8);
+  y += portrait ? 64 : 50;
+
+  // grid area
+  const footH = portrait ? 120 : 84;
+  const gutter = portrait ? 78 : 82, colGap = portrait ? 22 : 28;
+  const gx = pad + gutter, gw = W - pad - gx;
+  const dayHeadH = portrait ? 58 : 52;
+  const gy = y + dayHeadH, gh = H - footH - gy - 10;
+  const [lo, hi] = range(items);
+  const ppm = gh / (hi - lo);
+  const colW = (gw - colGap * (days.length - 1)) / days.length;
+
+  // hour lines + labels
+  ctx.font = `500 ${portrait ? 20 : 19}px ${F.mono}`;
+  for (let m = lo; m <= hi; m += 60) {
+    const yy = gy + (m - lo) * ppm;
+    ctx.fillStyle = P.muted; ctx.textBaseline = "middle"; ctx.textAlign = "right";
+    ctx.fillText(fmt(m), gx - 14, yy);
+    ctx.strokeStyle = P.line; ctx.lineWidth = 1; ctx.setLineDash([4, 6]);
+    days.forEach((d, i) => { const x0 = gx + i * (colW + colGap); ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + colW, yy); ctx.stroke(); });
+    ctx.setLineDash([]);
+  }
+  ctx.textAlign = "left"; ctx.textBaseline = "top";
+
+  const usedCats = new Set();
+  days.forEach((d, i) => {
+    const x0 = gx + i * (colW + colGap);
+    // column panel
+    ctx.fillStyle = P.panel; rr(ctx, x0, gy - 6, colW, gh + 12, 14); ctx.fill();
+    // day header
+    ctx.fillStyle = P.silver; ctx.font = `700 ${portrait ? 30 : 28}px ${F.en}`; ctx.letterSpacing = "4px";
+    ctx.fillText(DAYS[d].label, x0 + 4, gy - dayHeadH + 4); ctx.letterSpacing = "0px";
+    const lw = ctx.measureText(DAYS[d].label).width + 18 + 16;
+    ctx.fillStyle = P.muted; ctx.font = `500 ${portrait ? 22 : 21}px ${F.mono}`;
+    ctx.fillText(`${DAYS[d].date} ${DAYS[d].dow}`, x0 + lw, gy - dayHeadH + 10);
+
+    const laid = layoutDay(items.filter(it => it.day === d));
+    if (!laid.length) { ctx.fillStyle = P.muted; ctx.font = `500 22px ${F.body}`; ctx.fillText("予定なし", x0 + 20, gy + 20); }
+    for (const a of laid) {
+      const it = a.it; usedCats.add(it.cat);
+      const c = P.cat[it.cat] || P.cat.other;
+      const laneW = colW / a.cols;
+      const bx = x0 + a.lane * laneW + 4, bw = laneW - 8;
+      const by = gy + (a.s - lo) * ppm + 2, bh = Math.max((a.e - a.s) * ppm - 4, 18);
+      ctx.save();
+      rr(ctx, bx, by, bw, bh, 10);
+      ctx.fillStyle = ex.theme === "light" ? "#ffffff" : P.bg1; ctx.fill();
+      ctx.fillStyle = hexA(c, ex.theme === "light" ? 0.12 : 0.2); ctx.fill();
+      ctx.strokeStyle = hexA(c, a.clash ? 0.95 : 0.55); ctx.lineWidth = a.clash ? 2.5 : 1.5; ctx.stroke();
+      ctx.clip();
+      ctx.fillStyle = c; ctx.fillRect(bx, by, 7, bh);
+      const base = Math.max(15, Math.min(portrait ? (days.length > 1 ? 24 : 30) : 28, bw / 8));
+      const ix = bx + 18, iw = bw - 28, bottom = by + bh - 6;
+      let ty = by + Math.min(10, bh * 0.12);
+      if (bh < base * 3.3) {
+        // single line: time + title
+        ctx.font = `600 ${base * 0.82}px ${F.mono}`; ctx.fillStyle = c;
+        const ts = it.start + " "; ctx.fillText(ts, ix, by + (bh - base) / 2);
+        const tw = ctx.measureText(ts).width;
+        ctx.font = `700 ${base * 0.9}px ${F.body}`; ctx.fillStyle = P.fg;
+        let t1 = it.title; const mw = iw - tw;
+        if (ctx.measureText(t1).width > mw) { while (t1.length && ctx.measureText(t1 + "…").width > mw) t1 = t1.slice(0, -1); t1 += "…"; }
+        ctx.fillText(t1, ix + tw, by + (bh - base) / 2);
+      } else {
+        ctx.font = `600 ${base * 0.8}px ${F.mono}`; ctx.fillStyle = c;
+        ctx.fillText(`${it.start}–${it.end}`, ix, ty); ty += base * 1.15;
+        ctx.font = `700 ${base}px ${F.body}`; ctx.fillStyle = P.fg;
+        ty = drawLines(ctx, wrapLines(ctx, it.title, iw), ix, ty, base * 1.3, bottom, iw);
+        const sub = [it.place, ex.memo === "yes" ? it.memo : ""].filter(Boolean).join(" ・ ");
+        if (sub && ty + base * 1.1 <= bottom) {
+          ctx.font = `500 ${base * 0.74}px ${F.body}`; ctx.fillStyle = P.muted;
+          drawLines(ctx, wrapLines(ctx, sub, iw), ix, ty + 2, base * 1.0, bottom, iw);
+        }
+      }
+      ctx.restore();
+    }
+  });
+
+  // footer: legend + note
+  let fx = pad, fy = H - footH + (portrait ? 26 : 22);
+  ctx.font = `500 ${portrait ? 22 : 20}px ${F.body}`;
+  for (const k of Object.keys(CATS)) {
+    if (!usedCats.has(k)) continue;
+    const label = CATS[k].name, w = ctx.measureText(label).width + 34;
+    if (fx + w > W - pad) { fx = pad; fy += 34; }
+    ctx.fillStyle = P.cat[k]; ctx.beginPath(); ctx.arc(fx + 8, fy + 13, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = P.fg; ctx.fillText(label, fx + 22, fy);
+    fx += w + 14;
+  }
+  ctx.fillStyle = P.muted; ctx.font = `500 ${portrait ? 18 : 17}px ${F.body}`;
+  const note = "非公式ファンメイドの予定表です。ステージの内容・時間は変更になる場合があります。";
+  if (portrait) ctx.fillText(note, pad, H - 50);
+  else { ctx.textAlign = "right"; ctx.fillText(note, W - pad, fy + 4); ctx.textAlign = "left"; }
+  return new Promise(res => cv.toBlob(b => res(b), "image/png"));
+}
+
+let lastUrl = null;
+async function doExport() {
+  const btn = $("#btnExport"); btn.disabled = true; btn.textContent = "作成中…";
+  let blob;
+  try { blob = await renderImage(); } finally { btn.disabled = false; btn.textContent = "画像を作る"; }
+  if (!blob) { toast("画像を作れませんでした"); return; }
+  if (lastUrl) URL.revokeObjectURL(lastUrl);
+  lastUrl = URL.createObjectURL(blob);
+  const ex = state.exp;
+  const fname = `fanfest2026-tokyo_${ex.days === "both" ? "2days" : "day" + ex.days}_${ex.orient}.png`;
+  const status = el("p", { class: "note", role: "status" });
+  const inClaude = !!(window.claude && window.claude.use);
+  const saveBtn = el("button", { class: "btn primary", type: "button", onclick: async () => {
+    if (!inClaude) {
+      const a = el("a", { href: lastUrl, download: fname }); document.body.append(a); a.click(); a.remove();
+      status.textContent = "ダウンロードしました。"; return;
+    }
+    try { const dl = await window.claude.use("downloads"); if (!dl) throw { code: "unavailable" }; await dl.save({ filename: fname, data: blob }); status.textContent = "保存しました。"; }
+    catch (e) {
+      const code = e && e.code;
+      status.textContent = code === "declined" ? "保存をキャンセルしました。" : code === "rate_limited" ? "少し待ってからもう一度押してください。" : "ここでは保存できませんでした。画像を長押し（スマホ）か右クリックで保存してください。";
+    }
+  } }, "PNGを保存");
+  modal(el("div", { style: "display:flex;flex-direction:column;gap:12px" },
+    el("h3", {}, "画像ができました"),
+    el("div", { class: "preview" }, el("img", { src: lastUrl, alt: "書き出した予定表の画像" })),
+    status,
+    el("div", { class: "acts" }, el("span", { class: "note" }, `${ex.orient === "portrait" ? "1080×1920" : "1920×1080"} PNG`),
+      el("div", {}, el("button", { class: "btn", type: "button", onclick: closeModal }, "閉じる"), saveBtn))), true);
+  status.textContent = "画像を長押し（スマホ）か右クリックでも保存できます。";
+}
+$("#btnExport").addEventListener("click", doExport);
+$("#btnExportTop").addEventListener("click", doExport);
+
+/* ---------- mobile view switch ---------- */
+function setMView(v, scroll) {
+  state.view.m = v; document.body.dataset.mview = v;
+  document.querySelectorAll("#mnav button").forEach(b => b.dataset.v === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  save();
+  if (scroll) window.scrollTo({ top: 0 });
+}
+document.querySelectorAll("#mnav button").forEach(b => b.addEventListener("click", () => setMView(b.dataset.v, true)));
+/* ---------- boot ---------- */
+function commit() { save(); renderStages(); renderActs(); renderGoods(); renderFood(); renderBoard(); }
+renderCustomCats();
+setTab(state.view.tab);
+setMView(state.view.m || "cand", false);
+commit();
+})();
+</script>
+</html>
