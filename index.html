@@ -125,6 +125,15 @@ form.custom{display:flex;flex-direction:column;gap:10px}
 .blk .bp{font-size:11.5px;color:var(--muted);line-height:1.35}
 .blk.short button{flex-direction:row;align-items:center;gap:6px;padding:0 8px;white-space:nowrap}
 .blk.short .bn{overflow:hidden;text-overflow:ellipsis;word-break:normal}
+.blk.movable button{cursor:grab}
+.blk.movable{touch-action:pan-y}
+.blk.dragging{z-index:5;opacity:.92;touch-action:none}
+.blk.dragging button{cursor:grabbing;box-shadow:0 8px 24px color-mix(in srgb,#000 35%,transparent);background:color-mix(in srgb,var(--cat) 32%,var(--surface))}
+.blk .rz{position:absolute;left:12px;right:12px;bottom:0;height:12px;cursor:ns-resize;touch-action:none;display:flex;align-items:center;justify-content:center}
+.blk .rz::after{content:"";width:28px;height:3px;border-radius:2px;background:var(--cat);opacity:.55}
+.blk:hover .rz::after,.blk.dragging .rz::after{opacity:1}
+@media (pointer:coarse){.blk .rz{height:18px}.blk .rz::after{width:34px;height:4px;opacity:.8}}
+.blk.locked button{cursor:pointer}
 .blk.clash button{box-shadow:inset 0 0 0 1.5px var(--warn)}
 .blk.clash .bt::after{content:" 重複";color:var(--warn);font-family:var(--f-body);font-weight:700}
 .empty-day{position:absolute;inset:40px 8px auto;font-size:13px;color:var(--muted);text-align:center}
@@ -229,7 +238,7 @@ footer.src a{color:var(--crystal)}
           </div>
         </div>
         <div class="tt" id="tt" data-show="1"></div>
-        <p class="note">ブロックをタップすると時間の変更・メモ・削除ができます。オレンジ枠は時間が重なっている予定です。</p>
+        <p class="note">ブロックはドラッグで移動、下端のつまみで終了時刻を伸び縮みできます（5分刻み）。スマホは長押ししてから動かします。公式ステージは時間固定で、タップすると編集・削除ができます。オレンジ枠は時間が重なっている予定です。</p>
       </section>
 
       <section class="panel export" id="secExport" aria-label="画像書き出し">
@@ -552,11 +561,15 @@ function renderBoard() {
     for (const a of laid) {
       const it = a.it, top = (a.s - lo) * PPM, height = Math.max((a.e - a.s) * PPM, 22);
       const tall = height >= 54;
-      col.append(el("div", { class: "blk" + (a.clash ? " clash" : "") + (height < 46 ? " short" : ""), style: `top:${top}px;height:${height}px;left:${a.lane / a.cols * 100}%;width:${100 / a.cols}%;--cat:var(${CATS[it.cat].v})` },
-        el("button", { type: "button", title: `${it.start}–${it.end} ${it.title}`, onclick: () => openEditor(it) },
+      const movable = it.kind !== "stage";
+      const blk = el("div", { class: "blk" + (a.clash ? " clash" : "") + (height < 46 ? " short" : "") + (movable ? " movable" : " locked"), "data-id": it.id, style: `top:${top}px;height:${height}px;left:${a.lane / a.cols * 100}%;width:${100 / a.cols}%;--cat:var(${CATS[it.cat].v})` },
+        el("button", { type: "button", title: `${it.start}–${it.end} ${it.title}` + (movable ? "（ドラッグで移動）" : "（公式ステージは時間固定）"), onclick: () => { if (Drag.justEnded()) return; openEditor(it); } },
           el("span", { class: "bt" }, height < 46 ? it.start : `${it.start}–${it.end}`),
           el("span", { class: "bn" }, it.title),
-          tall && (it.place || it.memo) ? el("span", { class: "bp" }, [it.place, it.memo].filter(Boolean).join(" ・ ")) : null)));
+          tall && (it.place || it.memo) ? el("span", { class: "bp" }, [it.place, it.memo].filter(Boolean).join(" ・ ")) : null),
+        movable ? el("div", { class: "rz", "aria-hidden": "true", title: "ドラッグで終了時刻を変更" }) : null);
+      if (movable) Drag.bind(blk, it, lo); else Drag.bindLocked(blk);
+      col.append(blk);
     }
     tt.append(col);
   }
@@ -566,6 +579,88 @@ function renderBoard() {
   document.querySelectorAll("#dayTabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.d === state.view.day ? "true" : "false"));
 }
 document.querySelectorAll("#dayTabs button").forEach(b => b.addEventListener("click", () => { state.view.day = b.dataset.d; save(); renderBoard(); }));
+
+/* ---------- drag to move / resize ---------- */
+const Drag = (() => {
+  const SNAP = 5, MIN_DUR = 10, DAY_MIN = 8 * 60, DAY_MAX = 22 * 60;
+  let d = null, endedAt = 0;
+  const snap = m => Math.round(m / SNAP) * SNAP;
+  // block page scroll on touch while a drag is active
+  document.addEventListener("touchmove", e => { if (d && d.active) e.preventDefault(); }, { passive: false });
+
+  function bind(blk, it, lo) {
+    blk.addEventListener("pointerdown", e => {
+      if (e.button !== 0 || d) return;
+      const mode = e.target.closest(".rz") ? "resize" : "move";
+      d = { blk, it, lo, mode, id: e.pointerId, x0: e.clientX, y0: e.clientY, s0: toMin(it.start), e0: toMin(it.end), day: it.day,
+            active: false, touch: e.pointerType !== "mouse", timer: null, s: toMin(it.start), e: toMin(it.end) };
+      if (mode === "resize" || !d.touch) {
+        if (mode === "resize") { e.preventDefault(); activate(); }
+      } else {
+        // touch: long-press to start moving so normal scrolling keeps working
+        d.timer = setTimeout(() => { if (d && !d.active) { activate(); if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {} } }, 350);
+      }
+      window.addEventListener("pointermove", onMove, { passive: false });
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onCancel);
+    });
+  }
+  function activate() {
+    d.active = true; d.blk.classList.add("dragging");
+    try { d.blk.setPointerCapture(d.id); } catch (_) {}
+  }
+  function onMove(e) {
+    if (!d || e.pointerId !== d.id) return;
+    const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+    if (!d.active) {
+      if (d.touch) { if (Math.hypot(dx, dy) > 8) cleanup(); return; } // finger is scrolling
+      if (Math.hypot(dx, dy) < 4) return;
+      activate();
+    }
+    e.preventDefault();
+    const dm = snap(dy / PPM);
+    if (d.mode === "move") {
+      const dur = d.e0 - d.s0;
+      d.s = Math.min(Math.max(d.s0 + dm, DAY_MIN), DAY_MAX - dur); d.e = d.s + dur;
+      // switch day when the pointer is over the other column (desktop two-column view)
+      const under = document.elementsFromPoint(e.clientX, e.clientY).find(n => n.classList && n.classList.contains("col"));
+      const nd = under ? (under.classList.contains("d2") ? 2 : 1) : d.day;
+      if (nd !== d.day && getComputedStyle(under).display !== "none") { d.day = nd; under.append(d.blk); d.blk.style.left = "0"; d.blk.style.width = "100%"; }
+    } else {
+      d.e = Math.min(Math.max(d.e0 + dm, d.s0 + MIN_DUR), DAY_MAX);
+    }
+    d.blk.style.top = (d.s - d.lo) * PPM + "px";
+    d.blk.style.height = Math.max((d.e - d.s) * PPM, 22) + "px";
+    const bt = d.blk.querySelector(".bt"); if (bt) bt.textContent = `${fmt(d.s)}–${fmt(d.e)}`;
+  }
+  function onUp(e) {
+    if (!d || e.pointerId !== d.id) return;
+    if (d.active) {
+      const changed = d.s !== d.s0 || d.e !== d.e0 || d.day !== d.it.day;
+      endedAt = Date.now();
+      if (changed) {
+        const item = state.items.find(i => i.id === d.it.id);
+        if (item) { item.start = fmt(d.s); item.end = fmt(d.e); item.day = d.day; }
+        const msg = `「${d.it.title}」を DAY${d.day} ${fmt(d.s)}–${fmt(d.e)} にしました`;
+        cleanup(); commit(); toast(msg); return;
+      }
+    }
+    cleanup();
+  }
+  function onCancel() { if (d && d.active) renderBoard(); cleanup(); }
+  function cleanup() {
+    if (!d) return;
+    clearTimeout(d.timer); d.blk.classList.remove("dragging");
+    window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); window.removeEventListener("pointercancel", onCancel);
+    d = null;
+  }
+  function bindLocked(blk) {
+    let x0 = 0, y0 = 0;
+    blk.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; });
+    blk.addEventListener("pointerup", e => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 6) endedAt = Date.now(); });
+  }
+  return { bind, bindLocked, justEnded: () => Date.now() - endedAt < 350 };
+})();
 
 /* ---------- modal ---------- */
 function closeModal() { $("#modalRoot").replaceChildren(); }
